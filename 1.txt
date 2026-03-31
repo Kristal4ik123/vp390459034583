@@ -1,0 +1,563 @@
+#!binbash
+# Перед запуском скрипта задайте переменную с именем вашего домена
+# Замените vstavit-domen на ваш домен
+# export domain=vstavit-domen
+apt update
+apt install curl wget nginx qrencode jq -y
+
+# Получаем сертификат
+wget -O -  httpsget.acme.sh  sh
+~.acme.shacme.sh --upgrade --auto-upgrade
+~.acme.shacme.sh --issue --server letsencrypt -d $domain -w varwwwhtml --keylength ec-256 --force
+~.acme.shacme.sh --installcert -d $domain --cert-file ~.acme.shacme.sh$domain_ecc$domain.cer --key-file ~.acme.shacme.sh$domain_ecc$domain.key --fullchain-file ~.acme.shacme.sh$domain_eccfullchain.cer --ecc
+
+# Копируем сертификаты в другую папку для Xray
+mkdir -p usrlocaletcxrayxray_cert
+~.acme.shacme.sh --install-cert -d $domain --ecc 
+           --fullchain-file usrlocaletcxrayxray_certxray.crt 
+           --key-file usrlocaletcxrayxray_certxray.key
+chmod +r usrlocaletcxrayxray_certxray.key
+
+# Создаем файл установки в папку обновленного сертификата
+# Проверить добавление выполнения этого скрипта в cron
+# 0 1 1     bash usrlocaletcxrayxray_certxray-cert-renew
+
+touch usrlocaletcxrayxray_certxray-cert-renew
+cat  EOF  usrlocaletcxrayxray_certxray-cert-renew
+#!binbash
+$PWD.acme.sh --install-cert -d $domain --ecc --fullchain-file usrlocaletcxrayxray_certxray.crt --key-file usrlocaletcxrayxray_certxray.key
+chmod +r usrlocaletcxrayxray_certxray.key
+sudo systemctl restart xray
+EOF
+
+chmod +x usrlocaletcxrayxray_certxray-cert-renew
+
+crontab -l  grep -q xray-cert-renew  (crontab -l; echo 0 1 1     bash usrlocaletcxrayxray_certxray-cert-renew)  crontab -
+
+
+
+# Включаем bbr
+bbr=$(sysctl -a  grep net.ipv4.tcp_congestion_control)
+if [ $bbr = net.ipv4.tcp_congestion_control = bbr ]; then
+echo bbr уже включен
+else
+echo net.core.default_qdisc=fq  etcsysctl.conf
+echo net.ipv4.tcp_congestion_control=bbr  etcsysctl.conf
+sysctl -p
+echo bbr включен
+fi
+
+# Устанавливаем ядро Xray
+bash -c $(curl -4 -L httpsgithub.comXTLSXray-installrawmaininstall-release.sh) @ install
+[ -f usrlocaletcxray.keys ] && rm usrlocaletcxray.keys
+touch usrlocaletcxray.keys
+echo shortsid $(openssl rand -hex 8)  usrlocaletcxray.keys
+echo uuid $(xray uuid)  usrlocaletcxray.keys
+echo domain $domain  usrlocaletcxray.keys
+
+export uuid=$(cat usrlocaletcxray.keys  awk -F' ' 'uuid {print $2}')
+
+# Создаем файл конфигурации Xray
+touch usrlocaletcxrayconfig.json
+cat  EOF  usrlocaletcxrayconfig.json
+{
+    dns {
+      servers [
+        https+local1.1.1.1dns-query,
+        localhost
+      ]
+    },
+    routing {
+        domainStrategy IPIfNonMatch,
+        rules [
+            {
+                type field,
+                domain [
+                    geositecategory-ads-all
+                ],
+                outboundTag block
+            }
+        ]
+    },
+    inbounds [
+        {
+            port 443,
+            protocol vless,
+            settings {
+                clients [
+                    {
+                        email main,
+                        id $uuid,
+                        flow xtls-rprx-vision,
+                        level 0
+                    }
+                ],
+                decryption none,
+                fallbacks [
+                  {
+                    dest 8080
+                  }
+                ]
+            },
+            streamSettings {
+                network tcp,
+                security tls,
+                tlsSettings {
+                  fingerprint chrome,
+                  alpn http1.1,
+                  certificates [
+                    {
+                      certificateFile usrlocaletcxrayxray_certxray.crt,
+                      keyFile usrlocaletcxrayxray_certxray.key
+                    }
+                  ]
+                }
+            }
+        }
+    ],
+    outbounds [
+        {
+            protocol freedom,
+            tag direct
+        },
+        {
+            protocol blackhole,
+            tag block
+        }
+    ]
+}
+EOF
+
+# Исполняемый файл для списка клиентов
+touch usrlocalbinuserlist
+cat  'EOF'  usrlocalbinuserlist
+#!binbash
+emails=($(jq -r '.inbounds[0].settings.clients[].email' usrlocaletcxrayconfig.json))
+
+if [[ ${#emails[@]} -eq 0 ]]; then
+    echo Список клиентов пуст
+    exit 1
+fi
+
+echo Список клиентов
+for i in ${!emails[@]}; do
+    echo $((i+1)). ${emails[$i]}
+done
+EOF
+chmod +x usrlocalbinuserlist
+
+# исполняемый файл для ссылки основного пользователя
+touch usrlocalbinmainuser
+cat  'EOF'  usrlocalbinmainuser
+#!binbash
+protocol=$(jq -r '.inbounds[0].protocol' usrlocaletcxrayconfig.json)
+port=$(jq -r '.inbounds[0].port' usrlocaletcxrayconfig.json)
+uuid=$(cat usrlocaletcxray.keys  awk -F' ' 'uuid {print $2}')
+domain=$(cat usrlocaletcxray.keys  awk -F' ' 'domain {print $2}')
+fp=$(jq -r '.inbounds[0].streamSettings.tlsSettings.fingerprint' usrlocaletcxrayconfig.json)
+link=$protocol$uuid@$domain$portsecurity=tls&alpn=http%2F1.1&fp=$fp&spx=&type=tcp&flow=xtls-rprx-vision&headerType=none&encryption=none#mainuser
+echo 
+echo Ссылка для подключения
+echo $link
+echo 
+echo QR-код
+echo ${link}  qrencode -t ansiutf8
+EOF
+chmod +x usrlocalbinmainuser
+
+# Исполняемый файл для создания новых клиентов
+# Добавить сюда level 0,
+touch usrlocalbinnewuser
+cat  'EOF'  usrlocalbinnewuser
+#!binbash
+read -p Введите имя пользователя (email)  email
+
+    if [[ -z $email  $email ==   ]]; then
+    echo Имя пользователя не может быть пустым или содержать пробелы. Попробуйте снова.
+    exit 1
+    fi
+user_json=$(jq --arg email $email '.inbounds[0].settings.clients[]  select(.email == $email)' usrlocaletcxrayconfig.json)
+
+if [[ -z $user_json ]]; then
+uuid=$(xray uuid)
+jq --arg email $email --arg uuid $uuid '.inbounds[0].settings.clients += [{email $email, id $uuid, flow xtls-rprx-vision}]' usrlocaletcxrayconfig.json  tmp.json && mv tmp.json usrlocaletcxrayconfig.json
+systemctl restart xray
+index=$(jq --arg email $email '.inbounds[0].settings.clients  to_entries[]  select(.value.email == $email)  .key'  usrlocaletcxrayconfig.json)
+protocol=$(jq -r '.inbounds[0].protocol' usrlocaletcxrayconfig.json)
+port=$(jq -r '.inbounds[0].port' usrlocaletcxrayconfig.json)
+uuid=$(jq --argjson index $index -r '.inbounds[0].settings.clients[$index].id' usrlocaletcxrayconfig.json)
+username=$(jq --argjson index $index -r '.inbounds[0].settings.clients[$index].email' usrlocaletcxrayconfig.json)
+domain=$(cat usrlocaletcxray.keys  awk -F' ' 'domain {print $2}')
+fp=$(jq -r '.inbounds[0].streamSettings.tlsSettings.fingerprint' usrlocaletcxrayconfig.json)
+link=$protocol$uuid@$domain$portsecurity=tls&alpn=http%2F1.1&fp=$fp&spx=&type=tcp&flow=xtls-rprx-vision&headerType=none&encryption=none#$username
+echo 
+echo Ссылка для подключения
+echo $link
+echo 
+echo QR-код
+echo ${link}  qrencode -t ansiutf8
+else
+echo Пользователь с таким именем уже существует. Попробуйте снова. 
+fi
+EOF
+chmod +x usrlocalbinnewuser
+
+# Исполняемый файл для удаления клиентов
+touch usrlocalbinrmuser
+cat  'EOF'  usrlocalbinrmuser
+#!binbash
+emails=($(jq -r '.inbounds[0].settings.clients[].email' usrlocaletcxrayconfig.json))
+
+if [[ ${#emails[@]} -eq 0 ]]; then
+    echo Нет клиентов для удаления.
+    exit 1
+fi
+
+echo Список клиентов
+for i in ${!emails[@]}; do
+    echo $((i+1)). ${emails[$i]}
+done
+
+read -p Введите номер клиента для удаления  choice
+
+if ! [[ $choice =~ ^[0-9]+$ ]]  (( choice  1  choice  ${#emails[@]} )); then
+    echo Ошибка номер должен быть от 1 до ${#emails[@]}
+    exit 1
+fi
+
+selected_email=${emails[$((choice - 1))]}
+
+jq --arg email $selected_email 
+   '(.inbounds[0].settings.clients) = map(select(.email != $email))' 
+   usrlocaletcxrayconfig.json  tmp && mv tmp usrlocaletcxrayconfig.json
+
+systemctl restart xray
+
+echo Клиент $selected_email удалён.
+EOF
+chmod +x usrlocalbinrmuser
+
+# Исполняемый файл для вывода списка пользователей и создания ссылкок
+touch usrlocalbinsharelink
+cat  'EOF'  usrlocalbinsharelink
+#!binbash
+emails=($(jq -r '.inbounds[0].settings.clients[].email' usrlocaletcxrayconfig.json))
+
+for i in ${!emails[@]}; do
+   echo $((i + 1)). ${emails[$i]}
+done
+
+read -p Выберите клиента  client
+
+if ! [[ $client =~ ^[0-9]+$ ]]  (( client  1  client  ${#emails[@]} )); then
+    echo Ошибка номер должен быть от 1 до ${#emails[@]}
+    exit 1
+fi
+
+selected_email=${emails[$((client - 1))]}
+
+
+index=$(jq --arg email $selected_email '.inbounds[0].settings.clients  to_entries[]  select(.value.email == $email)  .key'  usrlocaletcxrayconfig.json)
+protocol=$(jq -r '.inbounds[0].protocol' usrlocaletcxrayconfig.json)
+port=$(jq -r '.inbounds[0].port' usrlocaletcxrayconfig.json) 
+uuid=$(jq --argjson index $index -r '.inbounds[0].settings.clients[$index].id' usrlocaletcxrayconfig.json)
+username=$(jq --argjson index $index -r '.inbounds[0].settings.clients[$index].email' usrlocaletcxrayconfig.json)
+sni=$(cat usrlocaletcxray.keys  awk -F' ' 'domain {print $2}')
+domain=$(cat usrlocaletcxray.keys  awk -F' ' 'domain {print $2}')
+fp=$(jq -r '.inbounds[0].streamSettings.tlsSettings.fingerprint' usrlocaletcxrayconfig.json)
+link=$protocol$uuid@$domain$portsecurity=tls&alpn=http%2F1.1&fp=$fp&spx=&type=tcp&flow=xtls-rprx-vision&headerType=none&encryption=none#$username
+echo 
+echo Ссылка для подключения
+echo $link
+echo 
+echo QR-код
+echo ${link}  qrencode -t ansiutf8
+EOF
+chmod +x usrlocalbinsharelink
+
+# Исполняемый файл для создания временного пользователя с ограничением устройств
+touch usrlocalbinnewtempuser
+cat  'EOF'  usrlocalbinnewtempuser
+#!binbash
+
+DB_FILE=usrlocaletcxrayusers_db.json
+CONFIG_FILE=usrlocaletcxrayconfig.json
+
+read -p Введите имя пользователя (email)  email
+
+if [[ -z $email  $email ==   ]]; then
+    echo Имя пользователя не может быть пустым или содержать пробелы.
+    exit 1
+fi
+
+user_json=$(jq --arg email $email '.inbounds[0].settings.clients[]  select(.email == $email)' $CONFIG_FILE)
+
+if [[ -n $user_json ]]; then
+    echo Пользователь с таким именем уже существует.
+    exit 1
+fi
+
+read -p Введите срок действия ключа в днях (оставьте пустым для постоянного)  days
+read -p Ограничить одним устройством (yn) [n]  limit_device
+
+if [[ -z $limit_device ]]; then
+    limit_device=n
+fi
+
+max_devices=0
+if [[ $limit_device == y  $limit_device == Y ]]; then
+    max_devices=1
+fi
+
+uuid=$(xray uuid)
+jq --arg email $email --arg uuid $uuid '.inbounds[0].settings.clients += [{email $email, id $uuid, flow xtls-rprx-vision}]' $CONFIG_FILE  tmp.json && mv tmp.json $CONFIG_FILE
+
+if [[ -n $days ]]; then
+    expire_date=$(date -d +$days days +%Y-%m-%dT%H%M%S 2devnull  date -v+${days}d +%Y-%m-%dT%H%M%S 2devnull)
+else
+    expire_date=null
+fi
+
+jq --arg email $email --arg uuid $uuid --arg expire $expire_date --argjson max_dev $max_devices '.users += [{email $email, uuid $uuid, expire_date $expire, max_devices $max_dev, created_at (now  strftime(%Y-%m-%dT%H%M%S))}]' $DB_FILE  tmp_db.json && mv tmp_db.json $DB_FILE
+
+systemctl restart xray
+
+index=$(jq --arg email $email '.inbounds[0].settings.clients  to_entries[]  select(.value.email == $email)  .key'  $CONFIG_FILE)
+protocol=$(jq -r '.inbounds[0].protocol' $CONFIG_FILE)
+port=$(jq -r '.inbounds[0].port' $CONFIG_FILE)
+uuid=$(jq --argjson index $index -r '.inbounds[0].settings.clients[$index].id' $CONFIG_FILE)
+username=$(jq --argjson index $index -r '.inbounds[0].settings.clients[$index].email' $CONFIG_FILE)
+domain=$(cat usrlocaletcxray.keys  awk -F' ' 'domain {print $2}')
+fp=$(jq -r '.inbounds[0].streamSettings.tlsSettings.fingerprint' $CONFIG_FILE)
+link=$protocol$uuid@$domain$portsecurity=tls&alpn=http%2F1.1&fp=$fp&spx=&type=tcp&flow=xtls-rprx-vision&headerType=none&encryption=none#$username
+
+echo 
+echo ================================
+echo Временный пользователь создан
+echo ================================
+echo Email $username
+if [[ $expire_date != null ]]; then
+    echo Срок действия до $expire_date
+else
+    echo Срок действия Постоянный
+fi
+if [[ $max_devices -eq 1 ]]; then
+    echo Ограничение Одно устройство
+else
+    echo Ограничение Без ограничений
+fi
+echo 
+echo Ссылка для подключения
+echo $link
+echo 
+echo QR-код
+echo ${link}  qrencode -t ansiutf8
+EOF
+chmod +x usrlocalbinnewtempuser
+
+# Исполняемый файл для очистки истекших временных ключей
+touch usrlocalbincleanup-expired
+cat  'EOF'  usrlocalbincleanup-expired
+#!binbash
+
+DB_FILE=usrlocaletcxrayusers_db.json
+CONFIG_FILE=usrlocaletcxrayconfig.json
+LOG_FILE=usrlocaletcxrayexpired_cleanup.log
+
+current_time=$(date +%s)
+
+echo $(date) - Starting cleanup of expired users  $LOG_FILE
+
+expired_users=$(jq -r --argjson now $current_time '.users[]  select(.expire_date != null and .expire_date != null)  select((.expire_date  fromdateiso8601)  $now)  .email' $DB_FILE 2devnull)
+
+if [[ -z $expired_users ]]; then
+    echo $(date) - No expired users found  $LOG_FILE
+    exit 0
+fi
+
+for email in $expired_users; do
+    echo $(date) - Removing expired user $email  $LOG_FILE
+    
+    jq --arg email $email '(.inbounds[0].settings.clients) = map(select(.email != $email))' $CONFIG_FILE  tmp_config.json && mv tmp_config.json $CONFIG_FILE
+    
+    jq --arg email $email '.users = map(select(.email != $email))' $DB_FILE  tmp_db.json && mv tmp_db.json $DB_FILE
+    
+    echo $(date) - User $email removed successfully  $LOG_FILE
+done
+
+systemctl restart xray
+echo $(date) - Xray service restarted  $LOG_FILE
+echo $(date) - Cleanup completed  $LOG_FILE
+EOF
+chmod +x usrlocalbincleanup-expired
+
+# Исполняемый файл для мониторинга активных подключений
+touch usrlocalbinmonitor-connections
+cat  'EOF'  usrlocalbinmonitor-connections
+#!binbash
+
+DB_FILE=usrlocaletcxrayusers_db.json
+LOG_FILE=usrlocaletcxrayconnections.log
+
+while true; do
+    current_time=$(date +%s)
+    
+    users_with_limit=$(jq -r '.users[]  select(.max_devices == 1)  .email' $DB_FILE 2devnull)
+    
+    if [[ -z $users_with_limit ]]; then
+        sleep 30
+        continue
+    fi
+    
+    for email in $users_with_limit; do
+        uuid=$(jq -r --arg email $email '.users[]  select(.email == $email)  .uuid' $DB_FILE)
+        
+        if [[ -z $uuid ]]; then
+            continue
+        fi
+        
+        connection_count=$(xray api statsquery --server=127.0.0.1443 pattern user${uuid}downlink  grep -c user 2devnull  echo 0)
+        
+        if [[ $connection_count -gt 1 ]]; then
+            echo $(date) - User $email ($uuid) has $connection_count active connections. Limit 1.  $LOG_FILE
+        fi
+    done
+    
+    sleep 30
+done
+EOF
+chmod +x usrlocalbinmonitor-connections
+
+# Исполняемый файл для просмотра информации о пользователе
+touch usrlocalbinuserinfo
+cat  'EOF'  usrlocalbinuserinfo
+#!binbash
+
+DB_FILE=usrlocaletcxrayusers_db.json
+CONFIG_FILE=usrlocaletcxrayconfig.json
+
+emails=($(jq -r '.inbounds[0].settings.clients[].email' $CONFIG_FILE))
+
+if [[ ${#emails[@]} -eq 0 ]]; then
+    echo Нет пользователей.
+    exit 1
+fi
+
+for i in ${!emails[@]}; do
+   echo $((i + 1)). ${emails[$i]}
+done
+
+read -p Выберите пользователя  choice
+
+if ! [[ $choice =~ ^[0-9]+$ ]]  (( choice  1  choice  ${#emails[@]} )); then
+    echo Ошибка номер должен быть от 1 до ${#emails[@]}
+    exit 1
+fi
+
+selected_email=${emails[$((choice - 1))]}
+
+user_data=$(jq --arg email $selected_email '.users[]  select(.email == $email)' $DB_FILE)
+
+echo 
+echo ================================
+echo Информация о пользователе
+echo ================================
+echo Email $selected_email
+
+if [[ -n $user_data ]]; then
+    expire_date=$(echo $user_data  jq -r '.expire_date')
+    max_devices=$(echo $user_data  jq -r '.max_devices')
+    created_at=$(echo $user_data  jq -r '.created_at')
+    
+    echo Создан $created_at
+    
+    if [[ $expire_date != null ]]; then
+        echo Срок действия до $expire_date
+    else
+        echo Срок действия Постоянный
+    fi
+    
+    if [[ $max_devices -eq 1 ]]; then
+        echo Ограничение устройств Одно устройство
+    else
+        echo Ограничение устройств Без ограничений
+    fi
+else
+    echo Тип Постоянный пользователь (без ограничений)
+fi
+EOF
+chmod +x usrlocalbinuserinfo
+
+# Создаем базу данных пользователей для временных ключей и ограничения устройств
+touch /usr/local/etc/xray/users_db.json
+cat << 'EOF' > /usr/local/etc/xray/users_db.json
+{
+  "users": []
+}
+EOF
+
+# Добавляем cron задачи для автоматической очистки истекших ключей
+# Запускается каждый час
+crontab -l | grep -q cleanup-expired || (crontab -l; echo "0 * * * * /usr/local/bin/cleanup-expired") | crontab -
+
+systemctl restart xray
+
+echo Xray-core успешно установлен
+mainuser
+
+# Создаем файл с подсказками
+touch $HOMEhelp
+cat  'EOF'  $HOMEhelp
+
+Команды для управления пользователями Xray
+
+    mainuser - выводит ссылку для подключения основного пользователя
+    newuser - создает нового пользователя (постоянный)
+    newtempuser - создает временного пользователя с ограничением устройств
+    rmuser - удаление пользователей
+    sharelink - выводит список пользователей и позволяет создать для них ссылки для подключения
+    userlist - выводит список клиентов
+    userinfo - показывает детальную информацию о пользователе
+    cleanup-expired - вручную запустить очистку истекших ключей
+
+
+
+Файл конфигурации находится по адресу
+
+    usrlocaletcxrayconfig.json
+
+Команда для перезагрузки ядра Xray
+
+    systemctl restart xray
+
+Команда для перезагрузки Nginx
+
+    systemctl restart nginx
+
+Адрес папки с сайтом
+    varwwwhtml
+
+EOF
+
+
+# Заменяем стандартный файл конфигурации nginx
+cat  EOF  etcnginxsites-availabledefault
+server {
+        listen 80;
+        server_name $domain;
+        return 301 https$http_host$request_uri;
+       }
+
+
+
+
+server {
+        listen 127.0.0.18080;
+        server_name $domain;
+        root varwwwhtml;
+        index index.html;
+        add_header Strict-Transport-Security max-age=63072000 always;
+}
+EOF
+mv varwwwhtmlindex.nginx-debian.html varwwwhtmlindex.html
+systemctl restart nginx
