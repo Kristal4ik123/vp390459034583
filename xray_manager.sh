@@ -45,16 +45,17 @@ api_install() {
     chmod +r /usr/local/etc/xray/xray_cert/xray.key
     
     # Создаем скрипт обновления сертификата
-    touch /usr/local/etc/xray/xray_cert/xray-cert-renew
-    cat << 'EOFRENEW' > /usr/local/etc/xray/xray_cert/xray-cert-renew
+    cat > /usr/local/etc/xray/xray_cert/xray-cert-renew <<'EOFRENEW'
 #!/bin/bash
-~/.acme.sh/acme.sh --install-cert -d $domain --ecc --fullchain-file /usr/local/etc/xray/xray_cert/xray.crt --key-file /usr/local/etc/xray/xray_cert/xray.key
+~/.acme.sh/acme.sh --install-cert -d "$1" --ecc --fullchain-file /usr/local/etc/xray/xray_cert/xray.crt --key-file /usr/local/etc/xray/xray_cert/xray.key
 chmod +r /usr/local/etc/xray/xray_cert/xray.key
-sudo systemctl restart xray
+systemctl restart xray
 EOFRENEW
     
     chmod +x /usr/local/etc/xray/xray_cert/xray-cert-renew
-    crontab -l | grep -q xray-cert-renew || (crontab -l; echo "0 1 1 * * * bash /usr/local/etc/xray/xray_cert/xray-cert-renew") | crontab -
+    
+    # Добавление в crontab (корректная обработка пустого crontab)
+    (crontab -l 2>/dev/null | grep -v xray-cert-renew; echo "0 1 1 * * * /usr/local/etc/xray/xray_cert/xray-cert-renew $domain") | crontab -
     
     # Включаем BBR
     bbr=$(sysctl -a | grep net.ipv4.tcp_congestion_control)
@@ -196,7 +197,7 @@ EOFUTIL
     chmod +x /usr/local/bin/mainuser
     
     # Добавляем cron для автоматической очистки истекших ключей
-    crontab -l | grep -q cleanup-expired || (crontab -l; echo "0 * * * * /usr/local/bin/xray_manager.sh cleanup_expired") | crontab -
+    (crontab -l 2>/dev/null | grep -v cleanup-expired; echo "0 * * * * /usr/local/bin/xray_manager.sh cleanup_expired") | crontab -
     
     # Настройка Nginx
     cat << EOFNGINX > /etc/nginx/sites-available/default
@@ -223,7 +224,7 @@ EOFNGINX
     systemctl restart xray
     
     # Создаем файл с подсказками
-    cat << 'EOFHELP' > $HOME/help
+    cat > /root/help <<'EOFHELP'
 
 Команды для управления Xray:
 
