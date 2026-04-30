@@ -1,11 +1,36 @@
 {
   "allowed_ids": [
     {
-      "telegram_id": 1765292965,
-      "hwid": []
+      "telegram_id": "1",
+      "hwid": null,
+      "created_at": 1777477749198
+    },
+    {
+      "telegram_id": "8158154441",
+      "hwid": "07513474b116231ee7f32d9546576df66e685750f6c49ab8d2e6612522e8042a",
+      "created_at": 1777478353013
+    },
+    {
+      "telegram_id": "7918758471",
+      "hwid": "a806a080afc4f9273a3047bbbe144329afe4faf7ac932b46d4336573ee061ec2",
+      "created_at": 1777478353187
+    },
+    {
+      "telegram_id": "1765292965",
+      "hwid": null,
+      "created_at": 1777478353361
+    },
+    {
+      "telegram_id": "6305696643",
+      "hwid": "9f63f2d4f3e2c04c5e29c1cc9983f6d784a124c7ea7f85d99b7e3fd51100e5e2",
+      "created_at": 1777478355071
     }
   ],
   "signatures": {
-    "1765292965": ""
+    "1": "fNr6qADDXWi5HDz4eeJ3unynf+B1dojUa7jFwW/7RPGxcdUM8UpN80Qt22+lsOLeozLgdZN57iTSEX9R2N/pAQ==",
+    "1765292965": "",
+    "8158154441": "J/V1H5X8SHPKcje0mbVwYXcsPrHqRTUVwRbh1TCxsga2jr5rtMHMsu29+9YQs/KsEVCEkIIkhbUE5gRlEzpwAg==",
+    "7918758471": "VVRvu6/WlodcI/csZK9FYnVTxWW52pbnNdUK3+QrqoIfKu88gIJ6yl8R6Z6gyv6EYQDTuh1F/v8puVfFVH8HAw==",
+    "6305696643": "IegwAYB9MBcdAVgB77WeaKoZhF8Akx5DhVSceRfJ3kQXJxTffNreMZ0bPSP3EOlVmifXH+eCVfm/XUY9XrrYCA=="
   }
 }
