@@ -2,7 +2,7 @@
   "allowed_ids": [
     {
       "telegram_id": "1",
-      "hwid": "185d94a00982886869e560bc34b5c7a8c9f488357fe903064843b30db5c31dfc",
+      "hwid": null,
       "created_at": 1777477749198
     },
     {
@@ -16,19 +16,19 @@
       "created_at": 1777478353187
     },
     {
-      "telegram_id": "1765292965",
-      "hwid": "185d94a00982886869e560bc34b5c7a8c9f488357fe903064843b30db5c31dfc",
-      "created_at": 1777478353361
-    },
-    {
       "telegram_id": "6305696643",
       "hwid": "9f63f2d4f3e2c04c5e29c1cc9983f6d784a124c7ea7f85d99b7e3fd51100e5e2",
       "created_at": 1777478355071
+    },
+    {
+      "telegram_id": "1765292965",
+      "hwid": "185d94a00982886869e560bc34b5c7a8c9f488357fe903064843b30db5c31dfc",
+      "created_at": 1777633446849
     }
   ],
   "signatures": {
     "1": "fNr6qADDXWi5HDz4eeJ3unynf+B1dojUa7jFwW/7RPGxcdUM8UpN80Qt22+lsOLeozLgdZN57iTSEX9R2N/pAQ==",
-    "1765292965": "aoH1i0Z92Gn+Nbcg92rAxbAzDx/5BVM18EKzohx8wKS4WIiO3HBOSrG3Cd1nQ22Y/L+/+YxD3htrf2oTFFU0Aw==",
+    "1765292965": "dVufyT1CrKKtanMZ/3z3YzxJVbjzUcej3LYJQqR45UXZDWENHPsbas2d94FJonanETdHDRpo8pW6EirZcN4CDQ==",
     "8158154441": "J/V1H5X8SHPKcje0mbVwYXcsPrHqRTUVwRbh1TCxsga2jr5rtMHMsu29+9YQs/KsEVCEkIIkhbUE5gRlEzpwAg==",
     "7918758471": "VVRvu6/WlodcI/csZK9FYnVTxWW52pbnNdUK3+QrqoIfKu88gIJ6yl8R6Z6gyv6EYQDTuh1F/v8puVfFVH8HAw==",
     "6305696643": "IegwAYB9MBcdAVgB77WeaKoZhF8Akx5DhVSceRfJ3kQXJxTffNreMZ0bPSP3EOlVmifXH+eCVfm/XUY9XrrYCA=="
